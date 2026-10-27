@@ -11,6 +11,8 @@
 
 **Una webapp ligera para registrar gastos y ver cuánto llevas gastado, con una interfaz moderna y modo claro/oscuro.**
 
+<img width="64" height="64" alt="686901312-b4feb138-2b7a-4ecb-9ebd-401df67c23c6" src="https://github.com/user-attachments/assets/b7aabe23-dc0c-4ac3-b76a-e46221d68423" />
+
 <p>
   <a href="https://graspts.vercel.app/"><img src="https://img.shields.io/badge/🌐-Abrir%20Graspts-16c79a?style=for-the-badge" alt="Abrir Graspts"></a>
   <img src="https://img.shields.io/badge/Estado-BETA-1e88e5?style=for-the-badge" alt="Estado beta">
