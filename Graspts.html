@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graspts — Calculadora de Gastos</title>
+
+<!-- Favicon: logo SVG en data URL -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2316c79a'/%3E%3Cstop%20offset='1'%20stop-color='%231e88e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='64'%20height='64'%20rx='16'%20fill='url(%23g)'/%3E%3Crect%20x='11'%20y='40'%20width='8'%20height='12'%20rx='3'%20fill='%23fff'%20opacity='.65'/%3E%3Crect%20x='23'%20y='32'%20width='8'%20height='20'%20rx='3'%20fill='%23fff'%20opacity='.85'/%3E%3Crect%20x='35'%20y='24'%20width='8'%20height='28'%20rx='3'%20fill='%23fff'/%3E%3Ccircle%20cx='48'%20cy='14'%20r='6.5'%20fill='%23fff'/%3E%3Ctext%20x='48'%20y='18'%20font-family='Arial,Helvetica,sans-serif'%20font-size='10'%20font-weight='700'%20text-anchor='middle'%20fill='%230f9b77'%3E%24%3C/text%3E%3C/svg%3E">
+
+<!-- Aplica el tema antes de pintar para evitar parpadeo -->
+<script>
+(function(){
+  try{
+    const guardado = localStorage.getItem('graspts_tema');
+    const prefiereOscuro = window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = guardado || (prefiereOscuro ? 'dark' : 'light');
+  }catch(e){}
+})();
+</script>
+
+<style>
+  :root{
+    --verde: #16c79a;
+    --verde-osc: #0f9b77;
+    --azul: #1e88e5;
+    --azul-osc: #1565c0;
+
+    --fondo: #f2fbf9;
+    --fondo-app: #ffffff;
+    --texto: #0d3b3b;
+    --gris: #6b8f8f;
+
+    --borde-input: #e0f2ee;
+    --borde-suave: #e6f5f1;
+    --monto-color: #1565c0;
+
+    --glass-bg: rgba(255,255,255,.16);
+    --glass-border: rgba(255,255,255,.35);
+
+    --sombra: 0 8px 24px rgba(15,155,119,.15);
+    --sombra-app: 0 24px 60px rgba(6,60,60,.35);
+  }
+
+  [data-theme="dark"]{
+    --verde: #1de9b6;
+    --verde-osc: #00bfa5;
+    --azul: #42a5f5;
+    --azul-osc: #64b5f6;
+
+    --fondo: #0d2624;
+    --fondo-app: #0b1f1e;
+    --texto: #e6f7f3;
+    --gris: #8fb3ae;
+
+    --borde-input: #1e3d39;
+    --borde-suave: #12322e;
+    --monto-color: #64b5f6;
+
+    --glass-bg: rgba(255,255,255,.10);
+    --glass-border: rgba(255,255,255,.22);
+
+    --sombra: 0 8px 24px rgba(0,0,0,.35);
+    --sombra-app: 0 24px 60px rgba(0,0,0,.55);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ color-scheme: light dark; }
+
+  body{
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f9b77 0%, #16c79a 35%, #1e88e5 100%);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding: 24px 16px 60px;
+    color: var(--texto);
+    transition: background .35s ease, color .25s ease;
+  }
+
+  [data-theme="dark"] body{
+    background: linear-gradient(135deg, #062b24 0%, #0a2a3a 45%, #06182a 100%);
+  }
+
+  .app{
+    width:100%;
+    max-width: 620px;
+    background: var(--fondo-app);
+    border-radius: 24px;
+    overflow:hidden;
+    box-shadow: var(--sombra-app);
+    transition: background .3s ease;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    background: linear-gradient(120deg, var(--verde-osc), var(--azul));
+    padding: 26px 24px 30px;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+    transition: background .3s ease;
+  }
+  [data-theme="dark"] header{
+    background: linear-gradient(120deg, #00796b, #0d47a1);
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    width:220px; height:220px;
+    background: rgba(255,255,255,.12);
+    border-radius:50%;
+    right:-70px; top:-110px;
+    pointer-events:none;
+  }
+  header h1{
+    font-size: 1.5rem;
+    letter-spacing:.5px;
+    display:flex; align-items:center; gap:10px;
+    padding-right: 54px;
+    position:relative;
+    z-index:1;
+  }
+
+  /* Logo (data URL) */
+  .logo{
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 11px;
+    display:block;
+    box-shadow: 0 4px 14px rgba(0,0,0,.22);
+  }
+
+  header p{
+    margin-top:6px;
+    font-size:.85rem;
+    opacity:.85;
+    position:relative;
+    z-index:1;
+  }
+
+  /* Botón modo oscuro */
+  .theme-toggle{
+    position:absolute;
+    top:20px; right:20px;
+    z-index:2;
+    width: 42px; height: 42px;
+    border-radius: 13px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(6px);
+    color:#fff;
+    font-size: 1.15rem;
+    cursor:pointer;
+    display:grid; place-items:center;
+    transition: transform .18s, background .2s, border-color .2s;
+  }
+  .theme-toggle:hover{
+    transform: translateY(-2px) rotate(8deg);
+    background: rgba(255,255,255,.26);
+  }
+  .theme-toggle:active{ transform: scale(.94); }
+
+  /* Total destacado */
+  .total-box{
+    margin-top: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(6px);
+    border-radius: 16px;
+    padding: 16px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:relative;
+    z-index:1;
+    transition: background .3s ease, border-color .3s ease;
+  }
+  .total-box .label{ font-size:.8rem; text-transform:uppercase; letter-spacing:1.4px; opacity:.9;}
+  .total-box .valor{
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing:-.5px;
+  }
+
+  /* ---------- FORM ---------- */
+  .form{
+    padding: 22px 24px 8px;
+    display:grid;
+    gap:12px;
+  }
+
+  .fila{
+    display:grid;
+    grid-template-columns: 1fr 130px;
+    gap:12px;
+  }
+
+  input, select{
+    width:100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 2px solid var(--borde-input);
+    background: var(--fondo);
+    font-size: .95rem;
+    color: var(--texto);
+    outline:none;
+    transition: border-color .2s, box-shadow .2s, background .2s, color .2s;
+    font-family: inherit;
+  }
+  input:focus, select:focus{
+    border-color: var(--verde);
+    background: var(--fondo-app);
+    box-shadow: 0 0 0 4px rgba(22,199,154,.15);
+  }
+  input::placeholder{ color: #9dbfbd; }
+  [data-theme="dark"] input::placeholder{ color:#5f8a84; }
+
+  button.agregar{
+    padding: 14px;
+    border:none;
+    border-radius: 14px;
+    background: linear-gradient(120deg, var(--verde), var(--azul));
+    color:#fff;
+    font-size: 1rem;
+    font-weight:600;
+    letter-spacing:.3px;
+    cursor:pointer;
+    transition: transform .15s, box-shadow .2s, filter .2s;
+    box-shadow: 0 6px 18px rgba(22,199,154,.35);
+  }
+  button.agregar:hover{ transform: translateY(-2px); filter:brightness(1.06); }
+  button.agregar:active{ transform: translateY(0) scale(.99); }
+
+  /* ---------- LISTA ---------- */
+  .lista-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 18px 24px 8px;
+    font-size:.78rem;
+    text-transform:uppercase;
+    letter-spacing:1.3px;
+    color: var(--gris);
+    font-weight:700;
+  }
+  #badgeCant{
+    background: linear-gradient(120deg, var(--verde), var(--azul));
+    color:#fff;
+    font-size:.72rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing:0;
+  }
+
+  ul#lista{
+    list-style:none;
+    padding: 0 16px 8px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height: 340px;
+    overflow-y:auto;
+  }
+
+  ul#lista::-webkit-scrollbar{ width:6px; }
+  ul#lista::-webkit-scrollbar-thumb{
+    background: linear-gradient(var(--verde), var(--azul));
+    border-radius: 6px;
+  }
+
+  li.item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--fondo);
+    border-left: 5px solid var(--verde);
+    animation: aparecer .25s ease;
+    transition: transform .15s, box-shadow .2s, background .3s;
+  }
+  li.item:hover{
+    transform: translateX(3px);
+    box-shadow: var(--sombra);
+  }
+  @keyframes aparecer{
+    from{ opacity:0; transform: translateY(-8px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .cat{
+    width: 38px; height: 38px;
+    flex: 0 0 38px;
+    display:grid; place-items:center;
+    border-radius: 11px;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, rgba(22,199,154,.18), rgba(30,136,229,.18));
+  }
+
+  .info{ flex:1; min-width:0; }
+  .info .desc{
+    font-weight:600;
+    font-size:.95rem;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .info .meta{
+    font-size:.74rem;
+    color: var(--gris);
+    margin-top:2px;
+  }
+
+  .monto{
+    font-weight:700;
+    font-size:1rem;
+    color: var(--monto-color);
+    white-space:nowrap;
+  }
+
+  .borrar{
+    border:none;
+    background: transparent;
+    cursor:pointer;
+    font-size:1.05rem;
+    padding: 6px 8px;
+    border-radius: 9px;
+    color:#c0d6d4;
+    transition: background .2s, color .2s;
+    line-height:1;
+  }
+  [data-theme="dark"] .borrar{ color:#4f7c76; }
+  .borrar:hover{ background:#ffe6e6; color:#e53935; }
+
+  .vacio{
+    text-align:center;
+    padding: 30px 20px 34px;
+    color: var(--gris);
+    font-size:.9rem;
+  }
+  .vacio .emoji{ font-size: 2.2rem; display:block; margin-bottom:8px; }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding: 16px 24px 22px;
+    border-top: 1px solid var(--borde-suave);
+    margin-top: 8px;
+    transition: border-color .3s;
+  }
+  .contador{ font-size:.82rem; color: var(--gris); }
+  .contador b{ color: var(--verde-osc); }
+
+  button.limpiar{
+    padding: 10px 16px;
+    border-radius: 11px;
+    border: 2px solid var(--borde-input);
+    background: var(--fondo-app);
+    color: var(--gris);
+    font-size:.85rem;
+    font-weight:600;
+    cursor:pointer;
+    transition: all .2s;
+    font-family: inherit;
+  }
+  button.limpiar:hover{
+    border-color:#e53935;
+    color:#e53935;
+    background:#fff5f5;
+  }
+
+  @media (max-width: 460px){
+    .fila{ grid-template-columns: 1fr; }
+    .total-box .valor{ font-size:1.55rem; }
+    header{ padding: 22px 18px 26px; }
+    .form, .lista-head, footer{ padding-left:18px; padding-right:18px; }
+    .theme-toggle{ top:16px; right:16px; width:38px; height:38px; }
+    .logo{ width:34px; height:34px; flex-basis:34px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">🌙</button>
+
+    <h1>
+      <img class="logo"
+           src="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2316c79a'/%3E%3Cstop%20offset='1'%20stop-color='%231e88e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='64'%20height='64'%20rx='16'%20fill='url(%23g)'/%3E%3Crect%20x='11'%20y='40'%20width='8'%20height='12'%20rx='3'%20fill='%23fff'%20opacity='.65'/%3E%3Crect%20x='23'%20y='32'%20width='8'%20height='20'%20rx='3'%20fill='%23fff'%20opacity='.85'/%3E%3Crect%20x='35'%20y='24'%20width='8'%20height='28'%20rx='3'%20fill='%23fff'/%3E%3Ccircle%20cx='48'%20cy='14'%20r='6.5'%20fill='%23fff'/%3E%3Ctext%20x='48'%20y='18'%20font-family='Arial,Helvetica,sans-serif'%20font-size='10'%20font-weight='700'%20text-anchor='middle'%20fill='%230f9b77'%3E%24%3C/text%3E%3C/svg%3E"
+           alt="Logo Graspts">
+      Graspts
+    </h1>
+    <p>Tu calculadora de gastos en verde y azul</p>
+
+    <div class="total-box">
+      <div class="label">Total gastado</div>
+      <div class="valor" id="total">$0.00</div>
+    </div>
+  </header>
+
+  <div class="form">
+    <input type="text" id="desc" placeholder="¿En qué gastaste? (ej. Supermercado)" maxlength="40" autocomplete="off">
+
+    <div class="fila">
+      <input type="number" id="monto" placeholder="Monto" min="0" step="0.01" inputmode="decimal">
+      <select id="categoria">
+        <option value="🛒">🛒 Comida</option>
+        <option value="🚗">🚗 Transporte</option>
+        <option value="🏠">🏠 Hogar</option>
+        <option value="💊">💊 Salud</option>
+        <option value="🎮">🎮 Ocio</option>
+        <option value="🎓">🎓 Educación</option>
+        <option value="📱">📱 Servicios</option>
+        <option value="📦">📦 Otros</option>
+      </select>
+    </div>
+
+    <button class="agregar" id="btnAgregar">+ Agregar gasto</button>
+  </div>
+
+  <div class="lista-head">
+    <span>Movimientos</span>
+    <span id="badgeCant">0</span>
+  </div>
+
+  <ul id="lista"></ul>
+
+  <footer>
+    <div class="contador">Gastos registrados: <b id="cantidad">0</b></div>
+    <button class="limpiar" id="btnLimpiar">Borrar todo</button>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const $desc      = document.getElementById('desc');
+  const $monto     = document.getElementById('monto');
+  const $categoria = document.getElementById('categoria');
+  const $lista     = document.getElementById('lista');
+  const $total     = document.getElementById('total');
+  const $cantidad  = document.getElementById('cantidad');
+  const $badge     = document.getElementById('badgeCant');
+  const $themeBtn  = document.getElementById('themeToggle');
+
+  const CLAVE_GASTOS = 'graspts_gastos_v1';
+  const CLAVE_TEMA   = 'graspts_tema';
+
+  let gastos = cargar();
+
+  /* ---------- Tema ---------- */
+  function actualizarBotonTema(){
+    const oscuro = document.documentElement.dataset.theme === 'dark';
+    $themeBtn.textContent = oscuro ? '☀️' : '🌙';
+    $themeBtn.setAttribute('aria-label', oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  }
+
+  $themeBtn.addEventListener('click', () => {
+    const nuevo = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nuevo;
+    try{ localStorage.setItem(CLAVE_TEMA, nuevo); }catch(e){}
+    actualizarBotonTema();
+  });
+
+  actualizarBotonTema();
+
+  /* ---------- Persistencia ---------- */
+  function cargar(){
+    try{
+      const data = JSON.parse(localStorage.getItem(CLAVE_GASTOS));
+      return Array.isArray(data) ? data : [];
+    }catch(e){ return []; }
+  }
+  function guardar(){
+    try{ localStorage.setItem(CLAVE_GASTOS, JSON.stringify(gastos)); }catch(e){}
+  }
+
+  /* ---------- Formato ---------- */
+  function formato(n){
+    return '$' + n.toLocaleString('es-MX', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function escapar(str){
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
+  }
+
+  /* ---------- Render ---------- */
+  function render(){
+    $lista.innerHTML = '';
+    let total = 0;
+
+    if(gastos.length === 0){
+      $lista.innerHTML = `<div class="vacio">
+        <span class="emoji">🌿</span>
+        Todavía no registraste gastos.<br>¡Empieza agregando el primero!
+      </div>`;
+    } else {
+      gastos.forEach(g => {
+        total += g.monto;
+
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div class="cat">${escapar(g.categoria)}</div>
+          <div class="info">
+            <div class="desc">${escapar(g.desc)}</div>
+            <div class="meta">${escapar(g.fecha)}</div>
+          </div>
+          <div class="monto">${formato(g.monto)}</div>
+          <button class="borrar" title="Eliminar" data-id="${g.id}">✕</button>
+        `;
+        $lista.appendChild(li);
+      });
+    }
+
+    $total.textContent = formato(total);
+    $cantidad.textContent = gastos.length;
+    $badge.textContent = gastos.length;
+    guardar();
+  }
+
+  /* ---------- Agregar ---------- */
+  function agregar(){
+    const desc = $desc.value.trim();
+    const monto = parseFloat($monto.value);
+
+    if(!desc){
+      alert('Escribe una descripción del gasto.');
+      $desc.focus();
+      return;
+    }
+    if(isNaN(monto) || monto <= 0){
+      alert('Ingresa un monto válido mayor a 0.');
+      $monto.focus();
+      return;
+    }
+
+    gastos.unshift({
+      id: Date.now() + Math.random().toString(16).slice(2),
+      desc: desc,
+      monto: Math.round(monto * 100) / 100,
+      categoria: $categoria.value,
+      fecha: new Date().toLocaleDateString('es-MX', {
+        day:'2-digit', month:'short', year:'numeric'
+      })
+    });
+
+    $desc.value = '';
+    $monto.value = '';
+    $desc.focus();
+    render();
+  }
+
+  /* ---------- Eventos ---------- */
+  document.getElementById('btnAgregar').addEventListener('click', agregar);
+
+  [$desc, $monto].forEach(el => {
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter') agregar();
+    });
+  });
+
+  $lista.addEventListener('click', e => {
+    const btn = e.target.closest('.borrar');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    gastos = gastos.filter(g => String(g.id) !== id);
+    render();
+  });
+
+  document.getElementById('btnLimpiar').addEventListener('click', () => {
+    if(gastos.length === 0) return;
+    if(confirm('¿Seguro que quieres borrar todos los gastos?')){
+      gastos = [];
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
