@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class GrasptsSmokeTests(unittest.TestCase):
     def test_main_html_exists_and_has_basic_document_structure(self):
         html = (ROOT / "Graspts.html").read_text(encoding="utf-8")
-        self.assertIn("<!DOCTYPE html>", html.upper())
+        self.assertIn("<!doctype html>", html.lower())
         self.assertIn('<html lang="es">', html)
         self.assertIn("<meta charset=", html.lower())
         self.assertIn("Graspts", html)
